@@ -1,57 +1,81 @@
-<p align="center"><img width=60% src="docs/header.png"></p>
+# ChatGPT 专属邮箱接码
 
-> Automated generation of Apple's iCloud emails via HideMyEmail.
+基于 [rtunazzz/hidemyemail-generator](https://github.com/rtunazzz/hidemyemail-generator) 二次开发。
 
-_You do need to have an active iCloud+ subscription to be able to generate iCloud emails..._
+这个项目保留 iCloud Hide My Email 批量生成能力，并新增 Cloudflare Worker + Durable Object 接码面板：
 
-<p align="center"><img src="docs/example.png"></p>
+- `ChatGPT 集中接码`：管理员登录后统一查看所有已识别验证码。
+- `ChatGPT 专属邮箱接码`：每个邮箱拥有独立永久链接，链接中不暴露邮箱地址。
+- `mailWorker` 统一连接 iCloud IMAP，一次收信，多端显示，前端只读缓存。
+- 每个邮箱使用随机 `accessToken`，不再使用统一 `auth_code`。
+- GitHub 仓库不包含真实 `wrangler.toml`、iCloud 密码、Apple Cookie、邮箱列表、专属链接。
 
-## Usage
+## 界面预览
 
-You can get prebuild binaries for Windows & ARM Macs from the [releases page](https://github.com/rtunazzz/hidemyemail-generator/releases). Follow the guide steps 1 & 2 below if you'd like to run it from source, otherwise you can skip to the 3rd step - set your cookie and run.
+### ChatGPT 集中接码
 
-Apple allows you to create 5 * # of people in your iCloud familly emails every 30 mins or so. From my experience, they cap the amount of iCloud emails you can generate at ~700.
+![ChatGPT 集中接码](docs/screenshots/central-panel.png)
 
-## Setup
-> Python 3.12+ is required. [uv](https://docs.astral.sh/uv/) is recommended.
+### ChatGPT 专属邮箱接码
 
-1. Clone this repository
+![ChatGPT 专属邮箱接码](docs/screenshots/dedicated-panel.png)
 
-```bash
-git clone https://github.com/rtunazzz/hidemyemail-generator
-cd hidemyemail-generator
+## 项目结构
+
+```text
+cloudflare-receiver-ccwu/   主接码 Worker，包含集中面板、专属接码页、mailWorker
+cloudflare-receiver/        旧域名代理 Worker，用来兼容旧链接
+source/hidemyemail-generator-main/  本地二改生成器工作目录
+docs/screenshots/           GitHub README 预览图
 ```
 
-2. Install dependencies and create a virtual environment
+## Cloudflare 部署
 
-```bash
-uv sync
+进入主 Worker 目录：
+
+```powershell
+cd cloudflare-receiver-ccwu
+Copy-Item .\wrangler.example.toml .\wrangler.toml
 ```
 
-3. [Save your cookie string](https://github.com/rtunazzz/hidemyemail-generator#getting-icloud-cookie-string)
+修改 `wrangler.toml` 中的域名和非敏感配置。真实密码用 Cloudflare Secret 设置：
 
-   > You only need to do this once 🙂
-
-4. Run the CLI
-
-```bash
-uv run hidemyemail generate --label test --count 1
+```powershell
+npx wrangler secret put HME_IMAP_PASSWORD
+npx wrangler secret put PANEL_PASSWORD
+npx wrangler deploy
 ```
 
-## Getting iCloud cookie string
+旧域名代理 Worker：
 
-> There is more than one way how you can get the required cookie string but this one is _imo_ the simplest...
+```powershell
+cd cloudflare-receiver
+Copy-Item .\wrangler.example.toml .\wrangler.toml
+npx wrangler deploy
+```
 
-1. Download [Cookie Editor](https://cookie-editor.com/) Chrome/Firefox extension
+## 安全说明
 
-2. Navigate to [iCloud settings](https://www.icloud.com/settings/) in your browser and log in
+不要提交以下文件：
 
-3. Open the Cookie Editor extension and click "Export" on the bottom and then "Header String".
+- `wrangler.toml`
+- `.dev.vars`
+- `.wrangler/`
+- `cookies.txt`
+- `emails.txt`
+- `receiver_urls.txt`
+- iCloud App 专用密码
+- Cloudflare API Token
+- Apple Cookie
 
-4. Paste the exported cookies into a file named `icloud_cookies.txt`
+这些已经在 `.gitignore` 中默认忽略。
 
-# License
+## 原项目说明
 
-Licensed under the MIT License - see the [LICENSE file](./LICENSE) for more details.
+原始项目用于自动生成 Apple iCloud Hide My Email 地址，需要有效 iCloud+ 订阅。本仓库是在其基础上，为个人接码面板和 Cloudflare 部署做的二次开发。
 
-Made by **[rtuna](https://twitter.com/rtunazzz)**.
+原项目： [rtunazzz/hidemyemail-generator](https://github.com/rtunazzz/hidemyemail-generator)
+
+## License
+
+沿用原项目 MIT License。

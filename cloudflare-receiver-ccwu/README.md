@@ -1,7 +1,19 @@
 # ChatGPT 专属邮箱接码
 
+基于 [rtunazzz/hidemyemail-generator](https://github.com/rtunazzz/hidemyemail-generator) 二次开发。
+
 Cloudflare Worker + Durable Object 版本的 iCloud 接码面板。后端由一个 `MailWorker`
 统一连接 iCloud IMAP，独立接码页和集中面板都只读缓存，避免每个页面重复扫邮箱。
+
+## 界面预览
+
+### ChatGPT 集中接码
+
+![ChatGPT 集中接码](../docs/screenshots/central-panel.png)
+
+### ChatGPT 专属邮箱接码
+
+![ChatGPT 专属邮箱接码](../docs/screenshots/dedicated-panel.png)
 
 ## 功能
 
