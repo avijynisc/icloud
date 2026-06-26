@@ -1,0 +1,10 @@
+name = "chatgpt-email-code-receiver-legacy"
+main = "worker.js"
+compatibility_date = "2026-06-25"
+
+routes = [
+  { pattern = "legacy-domain.example.com", custom_domain = true }
+]
+
+[vars]
+CENTRAL_API_ORIGIN = "https://your-main-domain.example.com"

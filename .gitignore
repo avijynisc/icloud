@@ -5,5 +5,23 @@ build/
 dist/
 emails.txt
 cookie.txt
+cookies.txt
+receiver_urls.txt
+receiver_urls*.txt
+*.log
+*.zip
 **/.DS_Store
 *.spec
+
+# Cloudflare local/deployment state. Keep real deployment config local.
+**/.wrangler/
+**/wrangler.toml
+**/.dev.vars
+.dev.vars
+
+# Environment files and local page snapshots.
+.env
+.env.*
+!*.example
+ccwu-*.html
+source/hidemyemail-generator-main/*.txt

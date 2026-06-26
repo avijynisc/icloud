@@ -1,0 +1,40 @@
+name = "chatgpt-email-code-receiver"
+main = "worker.js"
+compatibility_date = "2026-06-25"
+
+routes = [
+  { pattern = "your-domain.example.com", custom_domain = true }
+]
+
+[[durable_objects.bindings]]
+name = "MAIL_WORKER"
+class_name = "MailWorker"
+
+[[migrations]]
+tag = "v1-mail-worker"
+new_sqlite_classes = ["MailWorker"]
+
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+HME_IMAP_USER = "your-icloud-mailbox@example.com"
+CODE_PATTERN = "\\b\\d{4,8}\\b"
+POLL_INTERVAL_SECONDS = "10"
+IMAP_HOST = "imap.mail.me.com"
+IMAP_PORT = "993"
+SESSION_TTL_SECONDS = "300"
+RECENT_MINUTES = "5"
+INBOX_INTERVAL_SECONDS = "10"
+JUNK_INTERVAL_SECONDS = "25"
+MAX_RECENT_MESSAGES = "20"
+CODE_DISPLAY_MINUTES = "10"
+CODE_TTL_MINUTES = "10"
+SESSION_HISTORY_HOURS = "6"
+PROCESSED_TTL_HOURS = "24"
+ALLOW_NON_OPENAI_TEST_MAIL = "false"
+PUBLIC_RECEIVER_BASE_URL = "https://your-legacy-domain.example.com"
+
+# Set secrets outside git:
+# npx wrangler secret put HME_IMAP_PASSWORD
+# npx wrangler secret put PANEL_PASSWORD
