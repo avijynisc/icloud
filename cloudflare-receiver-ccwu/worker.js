@@ -1013,6 +1013,21 @@ const CENTRAL_HTML = `<!doctype html>
       background:linear-gradient(135deg,#10b981,#34d399);
       box-shadow:0 14px 30px rgba(16,185,129,.22);
     }
+    a.nav-link {
+      min-height:42px;
+      padding:0 16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      color:var(--text);
+      background:rgba(255,255,255,.82);
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-weight:800;
+      box-shadow:0 8px 18px rgba(15,23,42,.06);
+    }
     .btn-icon { width:18px; height:18px; flex:0 0 auto; }
     .stats {
       display:grid;
@@ -1288,6 +1303,7 @@ const CENTRAL_HTML = `<!doctype html>
       </div>
       <div class="role-badge">明亮模式 · 管理员</div>
       <div class="nav-actions">
+        <a class="nav-link" href="/admin/emails">邮箱管理</a>
         <button class="primary" id="toggle"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6z"/><path d="M14 4h4v16h-4z"/></svg><span id="toggleText">暂停</span></button>
         <button id="refresh"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.3"/><path d="M3 12A9 9 0 0 1 18.5 5.7"/><path d="M18 3v4h4"/><path d="M6 21v-4H2"/></svg>刷新</button>
         <button id="logout"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>退出</button>
@@ -1472,6 +1488,499 @@ const CENTRAL_HTML = `<!doctype html>
 </body>
 </html>`;
 
+const EMAILS_HTML = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iCloud 邮箱管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --surface:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 28%,#f8fafc 58%,#fff1f2 100%);
+      --panel:rgba(255,255,255,.9);
+      --panel-strong:#fff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:rgba(148,163,184,.28);
+      --primary:#6366f1;
+      --primary2:#8b5cf6;
+      --accent:#ec4899;
+      --ok:#10b981;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow:0 22px 70px rgba(15,23,42,.1);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      min-height:100vh;
+      font-family:'Open Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--text);
+      background:var(--surface);
+      overflow-x:hidden;
+    }
+    body:before {
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(99,102,241,.16), transparent 30%),
+        radial-gradient(circle at 86% 8%, rgba(236,72,153,.10), transparent 28%),
+        radial-gradient(circle at 88% 88%, rgba(16,185,129,.09), transparent 30%);
+      z-index:-1;
+    }
+    .topbar {
+      position:sticky;
+      top:0;
+      z-index:10;
+      background:rgba(255,255,255,.82);
+      border-bottom:1px solid rgba(226,232,240,.9);
+      backdrop-filter:blur(18px);
+      box-shadow:0 12px 30px rgba(15,23,42,.06);
+    }
+    .topbar-inner {
+      width:min(1280px, calc(100vw - 32px));
+      margin:0 auto;
+      min-height:76px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+      font-family:'Poppins', ui-sans-serif, system-ui, sans-serif;
+      font-weight:900;
+      color:#4f46e5;
+      font-size:20px;
+    }
+    .brand-icon {
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      color:#4f46e5;
+      background:rgba(99,102,241,.12);
+      border:1px solid rgba(99,102,241,.18);
+      box-shadow:0 12px 28px rgba(99,102,241,.16);
+    }
+    .actions {
+      margin-left:auto;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    button, .nav-link, select, input {
+      min-height:44px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.86);
+      color:var(--text);
+      font:inherit;
+      font-weight:800;
+      padding:0 16px;
+      box-shadow:0 8px 18px rgba(15,23,42,.06);
+    }
+    button, .nav-link { cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; }
+    button:hover, .nav-link:hover { transform:translateY(-1px); border-color:rgba(99,102,241,.36); box-shadow:0 14px 26px rgba(15,23,42,.1); }
+    button.primary { color:#fff; border-color:transparent; background:linear-gradient(135deg,var(--primary),var(--primary2)); box-shadow:0 14px 34px rgba(99,102,241,.24); }
+    button.ok { color:#fff; border-color:transparent; background:linear-gradient(135deg,#10b981,#34d399); box-shadow:0 14px 34px rgba(16,185,129,.22); }
+    button.warn { color:#fff; border-color:transparent; background:linear-gradient(135deg,#f59e0b,#f97316); box-shadow:0 14px 34px rgba(245,158,11,.2); }
+    button.small { min-height:36px; padding:0 12px; border-radius:12px; font-size:13px; }
+    button:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+    .btn-icon { width:18px; height:18px; flex:0 0 auto; }
+    .container { width:min(1280px, calc(100vw - 32px)); margin:28px auto 48px; display:grid; gap:18px; }
+    .card {
+      position:relative;
+      background:var(--panel);
+      border:1px solid rgba(226,232,240,.9);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(14px);
+      overflow:hidden;
+    }
+    .card:before {
+      content:"";
+      position:absolute;
+      inset:0 0 auto 0;
+      height:4px;
+      background:linear-gradient(90deg,#6366f1,#8b5cf6,#ec4899);
+    }
+    .hero { padding:26px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    h1 { margin:0 0 8px; font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; font-size:32px; letter-spacing:0; }
+    .muted { color:var(--muted); font-weight:700; }
+    .pills { margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; }
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:7px 12px;
+      border-radius:999px;
+      color:#4f46e5;
+      background:rgba(99,102,241,.1);
+      border:1px solid rgba(99,102,241,.16);
+      font-size:13px;
+      font-weight:850;
+    }
+    .pill.ok { color:#047857; background:rgba(16,185,129,.11); border-color:rgba(16,185,129,.20); }
+    .pill.warn { color:#b45309; background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.22); }
+    .stats { display:grid; grid-template-columns:repeat(4, minmax(170px,1fr)); gap:14px; }
+    .stat { min-height:112px; padding:20px; }
+    .stat:after {
+      content:"";
+      position:absolute;
+      right:-28px;
+      bottom:-28px;
+      width:92px;
+      height:92px;
+      border-radius:999px;
+      background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(236,72,153,.08));
+    }
+    .label { color:var(--muted); font-size:13px; font-weight:800; margin-bottom:10px; }
+    .value { font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; font-size:30px; font-weight:900; line-height:1; }
+    .mini { margin-top:8px; color:#94a3b8; font-size:12px; font-weight:800; }
+    .filters { padding:16px; display:grid; grid-template-columns:minmax(260px,1fr) 120px auto auto auto; gap:12px; align-items:center; }
+    .search-wrap { position:relative; }
+    .search-wrap svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:#94a3b8; }
+    .search-wrap input { width:100%; padding-left:44px; font-weight:700; }
+    label.inline { display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:850; white-space:nowrap; }
+    input[type="checkbox"] { width:18px; height:18px; min-height:auto; padding:0; accent-color:var(--accent); box-shadow:none; }
+    .status-line { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 4px; color:var(--muted); font-weight:750; }
+    .table-card { padding:20px; }
+    .table-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
+    .table-title { display:flex; align-items:center; gap:12px; font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; font-size:22px; font-weight:900; }
+    .title-icon { width:36px; height:36px; border-radius:12px; display:grid; place-items:center; color:#4f46e5; background:rgba(99,102,241,.10); border:1px solid rgba(99,102,241,.16); }
+    .table-wrap { border:1px solid rgba(226,232,240,.95); border-radius:18px; overflow:auto; background:#fff; }
+    table { width:100%; min-width:1040px; border-collapse:collapse; }
+    th, td { padding:14px 16px; text-align:left; border-bottom:1px solid #e8eef7; vertical-align:middle; }
+    th { color:#64748b; font-size:13px; font-weight:900; background:#f8fbff; position:sticky; top:0; z-index:1; }
+    tr:last-child td { border-bottom:0; }
+    .email { font-size:15px; font-weight:900; color:#0f172a; word-break:break-all; }
+    .sub { margin-top:4px; color:#94a3b8; font-size:12px; font-weight:750; word-break:break-all; }
+    .code { font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; font-weight:900; font-size:20px; letter-spacing:0; }
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:900;
+      background:#eef2ff;
+      color:#4f46e5;
+      border:1px solid rgba(99,102,241,.18);
+      white-space:nowrap;
+    }
+    .badge.ok { color:#047857; background:#ecfdf5; border-color:rgba(16,185,129,.22); }
+    .badge.warn { color:#b45309; background:#fffbeb; border-color:rgba(245,158,11,.24); }
+    .badge.bad { color:#b91c1c; background:#fef2f2; border-color:rgba(239,68,68,.20); }
+    .row-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .empty {
+      min-height:260px;
+      display:grid;
+      place-items:center;
+      color:#64748b;
+      text-align:center;
+      padding:36px;
+      border:1px dashed rgba(148,163,184,.4);
+      border-radius:18px;
+      background:#fff;
+    }
+    .toast {
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      z-index:99;
+      transform:translateY(18px);
+      opacity:0;
+      pointer-events:none;
+      border-radius:16px;
+      color:#fff;
+      background:linear-gradient(135deg,#0f172a,#334155);
+      padding:12px 16px;
+      font-weight:850;
+      box-shadow:0 18px 48px rgba(15,23,42,.25);
+      transition:.22s ease;
+    }
+    .toast.show { transform:translateY(0); opacity:1; }
+    @media (max-width: 980px) {
+      .topbar-inner { align-items:flex-start; flex-direction:column; padding:14px 0; }
+      .actions { margin-left:0; justify-content:flex-start; }
+      .hero { align-items:flex-start; flex-direction:column; }
+      .stats { grid-template-columns:repeat(2, minmax(0,1fr)); }
+      .filters { grid-template-columns:1fr; }
+    }
+    @media (max-width: 560px) {
+      .stats { grid-template-columns:1fr; }
+      h1 { font-size:26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-icon"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></span>
+        <span>iCloud 邮箱管理</span>
+      </div>
+      <div class="actions">
+        <a class="nav-link" href="/">集中接码</a>
+        <button class="primary" id="refresh"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.3"/><path d="M3 12A9 9 0 0 1 18.5 5.7"/><path d="M18 3v4h4"/><path d="M6 21v-4H2"/></svg>刷新</button>
+        <button id="logout"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>退出</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="card hero">
+      <div>
+        <h1>邮箱资产面板</h1>
+        <div class="muted">汇总专属链接、最近验证码和独立 session。页面只读缓存，不触发 IMAP 扫描。</div>
+        <div class="pills">
+          <span class="pill">只展示后台缓存</span>
+          <span class="pill ok">可补专属链接</span>
+          <span class="pill warn">可发现缺失 token</span>
+        </div>
+      </div>
+      <button class="ok" id="ensureMissing"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>补全部缺失链接</button>
+    </section>
+
+    <section class="stats">
+      <div class="card stat"><div class="label">邮箱总数</div><div class="value" id="statTotal">--</div><div class="mini">缓存中识别到的邮箱</div></div>
+      <div class="card stat"><div class="label">已有专属链接</div><div class="value" id="statWithToken">--</div><div class="mini">可打开 /code/:token</div></div>
+      <div class="card stat"><div class="label">缺失链接</div><div class="value" id="statMissing">--</div><div class="mini">建议立即补齐</div></div>
+      <div class="card stat"><div class="label">最近有验证码</div><div class="value" id="statRecent">--</div><div class="mini">最近保留窗口内</div></div>
+    </section>
+
+    <section class="card filters">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" placeholder="搜索邮箱、标签、验证码、主题、状态">
+      </div>
+      <select id="limit">
+        <option value="50">50</option>
+        <option value="100" selected>100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+      </select>
+      <label class="inline"><input id="missingOnly" type="checkbox"> 只看缺失链接</label>
+      <button id="copyAll"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>复制列表</button>
+      <button id="clearSearch"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>清空</button>
+    </section>
+
+    <div class="status-line">
+      <span id="status">正在读取缓存...</span>
+      <span class="pill ok" id="health">管理缓存正常</span>
+    </div>
+
+    <section class="card table-card">
+      <div class="table-head">
+        <div class="table-title"><span class="title-icon"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></span>邮箱列表</div>
+        <span class="pill" id="shownPill">--</span>
+      </div>
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>邮箱</th>
+              <th>专属链接</th>
+              <th>最近验证码</th>
+              <th>最近收信</th>
+              <th>最近 Session</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty" hidden>
+        <div>
+          <h2>暂无邮箱记录</h2>
+          <p class="muted">生成专属链接或收到验证码后，这里会自动出现。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const state = { items: [], timer: null };
+    const $ = (selector) => document.querySelector(selector);
+    const rowsEl = $("#rows");
+    const emptyEl = $("#empty");
+    const tableWrap = $("#tableWrap");
+    const toastEl = $("#toast");
+    const searchInput = $("#search");
+    const limitInput = $("#limit");
+    const missingOnlyInput = $("#missingOnly");
+    const statTotal = $("#statTotal");
+    const statWithToken = $("#statWithToken");
+    const statMissing = $("#statMissing");
+    const statRecent = $("#statRecent");
+    const statusEl = $("#status");
+    const healthEl = $("#health");
+    const shownPill = $("#shownPill");
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
+    }
+    function formatTime(value) {
+      if (!value) return "--";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "--";
+      return new Intl.DateTimeFormat("zh-CN", {
+        timeZone:"Asia/Shanghai",
+        year:"numeric",
+        month:"2-digit",
+        day:"2-digit",
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit",
+        hour12:false
+      }).format(date);
+    }
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      clearTimeout(state.toastTimer);
+      state.toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1600);
+    }
+    async function copyText(text, message) {
+      if (!text) return showToast("没有可复制内容");
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(message || "已复制");
+      } catch {
+        showToast("复制失败，请手动复制");
+      }
+    }
+    async function api(path, options) {
+      const res = await fetch(path, {
+        cache:"no-store",
+        credentials:"same-origin",
+        headers:{ "content-type":"application/json" },
+        ...(options || {})
+      });
+      if (res.status === 401) {
+        location.href = "/";
+        return { ok:false };
+      }
+      return res.json().catch(() => ({ ok:false, error:"响应解析失败" }));
+    }
+    function buildParams() {
+      const params = new URLSearchParams({
+        search: searchInput.value.trim(),
+        limit: limitInput.value,
+        missingOnly: missingOnlyInput.checked ? "1" : "0"
+      });
+      return params.toString();
+    }
+    async function load() {
+      statusEl.textContent = "正在读取缓存...";
+      healthEl.textContent = "同步中";
+      const data = await api("/api/admin/emails?" + buildParams());
+      if (!data.ok) {
+        statusEl.textContent = data.error || "读取失败";
+        healthEl.textContent = "读取异常";
+        render([]);
+        return;
+      }
+      state.items = data.items || [];
+      const summary = data.summary || {};
+      statTotal.textContent = summary.totalEmails ?? 0;
+      statWithToken.textContent = summary.withToken ?? 0;
+      statMissing.textContent = summary.missingToken ?? 0;
+      statRecent.textContent = summary.withRecentCode ?? 0;
+      shownPill.textContent = "显示 " + state.items.length + " / " + (data.total || 0);
+      statusEl.textContent = state.items.length ? "缓存已同步" : "没有匹配的邮箱记录";
+      healthEl.textContent = "管理缓存正常";
+      render(state.items);
+    }
+    function render(items) {
+      tableWrap.hidden = !items.length;
+      emptyEl.hidden = !!items.length;
+      rowsEl.innerHTML = items.map((item, index) => {
+        const linkBadge = item.hasToken
+          ? '<span class="badge ok">已有链接</span>'
+          : '<span class="badge bad">缺失链接</span>';
+        const code = item.latestCode
+          ? '<div class="code">' + escapeHtml(item.latestCode) + '</div><div class="sub">' + escapeHtml(item.latestCodeSubject || "--") + '</div>'
+          : '<span class="muted">--</span>';
+        const sessionBadge = item.latestSessionStatus
+          ? '<span class="badge ' + (item.latestSessionStatus === "success" ? "ok" : item.latestSessionStatus === "expired" ? "warn" : "") + '">' + escapeHtml(item.latestSessionStatus) + '</span>'
+          : '<span class="muted">--</span>';
+        return '<tr>' +
+          '<td><div class="email">' + escapeHtml(item.targetEmail) + '</div><div class="sub">' + escapeHtml(item.label || "未标记") + '</div></td>' +
+          '<td>' + linkBadge + '<div class="sub">' + escapeHtml(item.accessUrl ? "可复制专属链接" : "需要补链接") + '</div></td>' +
+          '<td>' + code + '</td>' +
+          '<td><span class="badge">' + escapeHtml(item.latestCodeSource || "--") + '</span><div class="sub">' + escapeHtml(formatTime(item.latestCodeAt)) + '</div></td>' +
+          '<td>' + sessionBadge + '<div class="sub">' + escapeHtml(formatTime(item.latestSessionAt)) + '</div></td>' +
+          '<td><div class="row-actions">' +
+            '<button class="small" data-action="copy-email" data-index="' + index + '">复制邮箱</button>' +
+            '<button class="small" data-action="copy-link" data-index="' + index + '"' + (item.accessUrl ? "" : " disabled") + '>复制链接</button>' +
+            '<button class="small ok" data-action="ensure" data-index="' + index + '">' + (item.hasToken ? "检查链接" : "补链接") + '</button>' +
+            '<button class="small warn" data-action="reset" data-index="' + index + '">重置链接</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join("");
+    }
+    async function ensureToken(item) {
+      const data = await api("/api/admin/emails/ensure-token", {
+        method:"POST",
+        body:JSON.stringify({ targetEmail:item.targetEmail, label:item.label || "managed" })
+      });
+      if (data.ok) showToast("专属链接已补齐");
+      else showToast(data.error || "补链接失败");
+      await load();
+    }
+    rowsEl.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const item = state.items[Number(button.dataset.index)];
+      if (!item) return;
+      const action = button.dataset.action;
+      if (action === "copy-email") return copyText(item.targetEmail, "邮箱已复制");
+      if (action === "copy-link") return copyText(item.accessUrl, "专属链接已复制");
+      if (action === "ensure") return ensureToken(item);
+      if (action === "reset") {
+        button.disabled = true;
+        const data = await api("/api/admin/tokens/reset", { method:"POST", body:JSON.stringify({ targetEmail:item.targetEmail }) });
+        showToast(data.ok ? "专属链接已重置" : (data.error || "重置失败"));
+        await load();
+      }
+    });
+    $("#ensureMissing").addEventListener("click", async () => {
+      const missing = state.items.filter((item) => !item.hasToken);
+      if (!missing.length) return showToast("没有缺失链接");
+      $("#ensureMissing").disabled = true;
+      for (const item of missing) await ensureToken(item);
+      $("#ensureMissing").disabled = false;
+      showToast("缺失链接已补齐");
+      await load();
+    });
+    $("#copyAll").addEventListener("click", () => copyText(state.items.map((item) => [item.targetEmail, item.accessUrl || "", item.latestCode || ""].join("\\t")).join("\\n"), "列表已复制"));
+    $("#clearSearch").addEventListener("click", () => { searchInput.value = ""; missingOnlyInput.checked = false; load(); });
+    $("#refresh").addEventListener("click", load);
+    $("#logout").addEventListener("click", async () => { await fetch("/api/logout", { method:"POST" }); location.href = "/"; });
+    searchInput.addEventListener("input", () => { clearTimeout(state.timer); state.timer = setTimeout(load, 180); });
+    limitInput.addEventListener("change", load);
+    missingOnlyInput.addEventListener("change", load);
+    load();
+  </script>
+</body>
+</html>`;
+
 export class MailWorker {
   constructor(state, env) {
     this.state = state;
@@ -1533,6 +2042,24 @@ export class MailWorker {
         return json({ ok: true, token });
       } catch {
         return json({ ok: false, error: "Token not found" }, 404);
+      }
+    }
+
+    if (url.pathname === "/admin/emails") {
+      const search = (url.searchParams.get("search") || "").trim().toLowerCase();
+      const limit = clampNumber(Number(url.searchParams.get("limit") || 100), 1, 500);
+      const missingOnly = isTruthy(url.searchParams.get("missingOnly") || "false");
+      const result = await this.listManagedEmails({ search, limit, missingOnly });
+      return json({ ok: true, ...result });
+    }
+
+    if (url.pathname === "/admin/emails/ensure-token" && request.method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      try {
+        const token = await this.ensureAccessToken(body);
+        return json({ ok: true, token });
+      } catch {
+        return json({ ok: false, error: "Invalid email" }, 400);
       }
     }
 
@@ -1672,6 +2199,25 @@ export class MailWorker {
     next.resetAt = new Date().toISOString();
     await this.state.storage.put(`token:${next.accessToken}`, next);
     return next;
+  }
+
+  async ensureAccessToken(body) {
+    const targetEmail = String(body.targetEmail || "").trim().toLowerCase();
+    if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(targetEmail)) throw new Error("Invalid targetEmail");
+    const current = await this.findActiveTokenByEmail(targetEmail);
+    if (current) return current;
+    return this.registerAccessToken({
+      targetEmail,
+      label: String(body.label || "managed"),
+      accessToken: randomHex(24),
+    });
+  }
+
+  async findActiveTokenByEmail(targetEmail) {
+    const rows = Array.from((await this.state.storage.list({ prefix: "token:" })).values());
+    return rows
+      .filter((item) => item.targetEmail === targetEmail && !item.revokedAt)
+      .sort((a, b) => Date.parse(b.createdAt || b.resetAt || 0) - Date.parse(a.createdAt || a.resetAt || 0))[0] || null;
   }
 
   async scanDue() {
@@ -1850,6 +2396,108 @@ export class MailWorker {
     );
   }
 
+  async listManagedEmails({ search, limit, missingOnly }) {
+    const tokens = Array.from((await this.state.storage.list({ prefix: "token:" })).values());
+    const codes = Array.from((await this.state.storage.list({ prefix: "code:" })).values());
+    const sessions = Array.from((await this.state.storage.list({ prefix: "session:" })).values());
+    const map = new Map();
+
+    const ensureRow = (targetEmail) => {
+      const email = String(targetEmail || "").trim().toLowerCase();
+      if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(email)) return null;
+      if (!map.has(email)) {
+        map.set(email, {
+          targetEmail: email,
+          label: "",
+          hasToken: false,
+          tokenCount: 0,
+          tokenCreatedAt: "",
+          accessUrl: "",
+          latestCode: "",
+          latestCodeAt: "",
+          latestCodeSource: "",
+          latestCodeSubject: "",
+          latestSessionStatus: "",
+          latestSessionAt: "",
+          missingToken: true,
+        });
+      }
+      return map.get(email);
+    };
+
+    for (const token of tokens) {
+      if (!token || token.revokedAt) continue;
+      const row = ensureRow(token.targetEmail);
+      if (!row) continue;
+      row.hasToken = true;
+      row.missingToken = false;
+      row.tokenCount += 1;
+      if (!row.label && token.label) row.label = token.label;
+      const tokenTime = Date.parse(token.resetAt || token.createdAt || 0);
+      const currentTime = Date.parse(row.tokenCreatedAt || 0);
+      if (tokenTime >= currentTime) {
+        row.tokenCreatedAt = token.resetAt || token.createdAt || "";
+        row.accessUrl = `${getEnv(this.env, "PUBLIC_RECEIVER_BASE_URL", "https://icloudd.cc.cd").replace(/\/+$/, "")}/code/${token.accessToken}`;
+      }
+    }
+
+    for (const item of codes) {
+      const row = ensureRow(item.targetEmail);
+      if (!row) continue;
+      const itemTime = Date.parse(item.emailDate || item.createdAt || 0);
+      const currentTime = Date.parse(row.latestCodeAt || 0);
+      if (item.code && itemTime >= currentTime) {
+        row.latestCode = item.code;
+        row.latestCodeAt = item.emailDate || item.createdAt || "";
+        row.latestCodeSource = item.source || "";
+        row.latestCodeSubject = item.subject || "";
+      }
+    }
+
+    for (const session of sessions) {
+      const row = ensureRow(session.targetEmail);
+      if (!row) continue;
+      if (!row.label && session.label) row.label = session.label;
+      const sessionTime = Date.parse(session.matchedAt || session.startTime || 0);
+      const currentTime = Date.parse(row.latestSessionAt || 0);
+      if (sessionTime >= currentTime) {
+        row.latestSessionStatus = session.status || "";
+        row.latestSessionAt = session.matchedAt || session.startTime || "";
+      }
+    }
+
+    const activityTime = (row) => Math.max(
+      Date.parse(row.latestCodeAt || 0) || 0,
+      Date.parse(row.latestSessionAt || 0) || 0,
+      Date.parse(row.tokenCreatedAt || 0) || 0
+    );
+    const allRows = Array.from(map.values()).sort((a, b) => {
+      if (a.missingToken !== b.missingToken) return a.missingToken ? -1 : 1;
+      return activityTime(b) - activityTime(a) || a.targetEmail.localeCompare(b.targetEmail);
+    });
+    const summary = {
+      totalEmails: allRows.length,
+      withToken: allRows.filter((row) => row.hasToken).length,
+      missingToken: allRows.filter((row) => row.missingToken).length,
+      withRecentCode: allRows.filter((row) => row.latestCode).length,
+    };
+    const filtered = allRows
+      .filter((row) => !missingOnly || row.missingToken)
+      .filter((row) => {
+        if (!search) return true;
+        return [
+          row.targetEmail,
+          row.label,
+          row.latestCode,
+          row.latestCodeSubject,
+          row.latestCodeSource,
+          row.latestSessionStatus,
+        ].join(" ").toLowerCase().includes(search);
+      });
+
+    return { items: filtered.slice(0, limit), total: filtered.length, summary };
+  }
+
   async accessUrlForEmail(targetEmail) {
     const rows = Array.from((await this.state.storage.list({ prefix: "token:" })).values())
       .filter((item) => item.targetEmail === targetEmail && !item.revokedAt)
@@ -1925,6 +2573,16 @@ export default {
       return mailWorkerFetch(env, "/admin/tokens/reset", request);
     }
 
+    if (url.pathname === "/api/admin/emails") {
+      if (!(await hasPanelSession(request, env))) return json({ ok: false, error: "Unauthorized", items: [] }, 401);
+      return mailWorkerFetch(env, `/admin/emails${url.search}`);
+    }
+
+    if (url.pathname === "/api/admin/emails/ensure-token") {
+      if (!(await hasPanelSession(request, env))) return json({ ok: false, error: "Unauthorized" }, 401);
+      return mailWorkerFetch(env, "/admin/emails/ensure-token", request);
+    }
+
     if (url.pathname === "/api/admin/codes") {
       if (!(await hasPanelSession(request, env))) return json({ ok: false, error: "Unauthorized", items: [] }, 401);
       return mailWorkerFetch(env, `/admin/codes${url.search}`);
@@ -1961,6 +2619,10 @@ export default {
 
     if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/all") {
       return html(await hasPanelSession(request, env) ? CENTRAL_HTML : LOGIN_HTML);
+    }
+
+    if (url.pathname === "/admin/emails" || url.pathname === "/emails") {
+      return html(await hasPanelSession(request, env) ? EMAILS_HTML : LOGIN_HTML);
     }
 
     if (url.pathname.startsWith("/code/")) {
