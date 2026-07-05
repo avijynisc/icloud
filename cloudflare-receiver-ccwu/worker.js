@@ -1634,7 +1634,7 @@ const EMAILS_HTML = `<!doctype html>
     }
     .pill.ok { color:#047857; background:rgba(16,185,129,.11); border-color:rgba(16,185,129,.20); }
     .pill.warn { color:#b45309; background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.22); }
-    .stats { display:grid; grid-template-columns:repeat(4, minmax(170px,1fr)); gap:14px; }
+    .stats { display:grid; grid-template-columns:repeat(5, minmax(160px,1fr)); gap:14px; }
     .stat { min-height:112px; padding:20px; }
     .stat:after {
       content:"";
@@ -1661,7 +1661,7 @@ const EMAILS_HTML = `<!doctype html>
     .table-title { display:flex; align-items:center; gap:12px; font-family:'Poppins', ui-sans-serif, system-ui, sans-serif; font-size:22px; font-weight:900; }
     .title-icon { width:36px; height:36px; border-radius:12px; display:grid; place-items:center; color:#4f46e5; background:rgba(99,102,241,.10); border:1px solid rgba(99,102,241,.16); }
     .table-wrap { border:1px solid rgba(226,232,240,.95); border-radius:18px; overflow:auto; background:#fff; }
-    table { width:100%; min-width:1040px; border-collapse:collapse; }
+    table { width:100%; min-width:1280px; border-collapse:collapse; }
     th, td { padding:14px 16px; text-align:left; border-bottom:1px solid #e8eef7; vertical-align:middle; }
     th { color:#64748b; font-size:13px; font-weight:900; background:#f8fbff; position:sticky; top:0; z-index:1; }
     tr:last-child td { border-bottom:0; }
@@ -1685,6 +1685,7 @@ const EMAILS_HTML = `<!doctype html>
     .badge.ok { color:#047857; background:#ecfdf5; border-color:rgba(16,185,129,.22); }
     .badge.warn { color:#b45309; background:#fffbeb; border-color:rgba(245,158,11,.24); }
     .badge.bad { color:#b91c1c; background:#fef2f2; border-color:rgba(239,68,68,.20); }
+    .badge.sold { color:#7c2d12; background:#fff7ed; border-color:rgba(249,115,22,.26); }
     .row-actions { display:flex; gap:8px; flex-wrap:wrap; }
     .empty {
       min-height:260px;
@@ -1761,6 +1762,7 @@ const EMAILS_HTML = `<!doctype html>
       <div class="card stat"><div class="label">已有专属链接</div><div class="value" id="statWithToken">--</div><div class="mini">可打开 /code/:token</div></div>
       <div class="card stat"><div class="label">缺失链接</div><div class="value" id="statMissing">--</div><div class="mini">建议立即补齐</div></div>
       <div class="card stat"><div class="label">最近有验证码</div><div class="value" id="statRecent">--</div><div class="mini">最近保留窗口内</div></div>
+      <div class="card stat"><div class="label">成品/已出</div><div class="value" id="statFinished">--</div><div class="mini">已标记完成状态</div></div>
     </section>
 
     <section class="card filters">
@@ -1794,6 +1796,8 @@ const EMAILS_HTML = `<!doctype html>
           <thead>
             <tr>
               <th>邮箱</th>
+              <th>注册时间</th>
+              <th>状态</th>
               <th>专属链接</th>
               <th>最近验证码</th>
               <th>最近收信</th>
@@ -1828,6 +1832,7 @@ const EMAILS_HTML = `<!doctype html>
     const statWithToken = $("#statWithToken");
     const statMissing = $("#statMissing");
     const statRecent = $("#statRecent");
+    const statFinished = $("#statFinished");
     const statusEl = $("#status");
     const healthEl = $("#health");
     const shownPill = $("#shownPill");
@@ -1902,6 +1907,7 @@ const EMAILS_HTML = `<!doctype html>
       statWithToken.textContent = summary.withToken ?? 0;
       statMissing.textContent = summary.missingToken ?? 0;
       statRecent.textContent = summary.withRecentCode ?? 0;
+      statFinished.textContent = summary.finishedOrOut ?? 0;
       shownPill.textContent = "显示 " + state.items.length + " / " + (data.total || 0);
       statusEl.textContent = state.items.length ? "缓存已同步" : "没有匹配的邮箱记录";
       healthEl.textContent = "管理缓存正常";
@@ -1920,8 +1926,15 @@ const EMAILS_HTML = `<!doctype html>
         const sessionBadge = item.latestSessionStatus
           ? '<span class="badge ' + (item.latestSessionStatus === "success" ? "ok" : item.latestSessionStatus === "expired" ? "warn" : "") + '">' + escapeHtml(item.latestSessionStatus) + '</span>'
           : '<span class="muted">--</span>';
+        const productStatus = item.productStatus === "out"
+          ? '<span class="badge sold">成品/已出</span><div class="sub">' + escapeHtml(formatTime(item.productStatusAt)) + '</div>'
+          : '<span class="badge">未标记</span>';
+        const statusButtonText = item.productStatus === "out" ? "取消已出" : "成品/已出";
+        const statusButtonClass = item.productStatus === "out" ? "small" : "small warn";
         return '<tr>' +
           '<td><div class="email">' + escapeHtml(item.targetEmail) + '</div><div class="sub">' + escapeHtml(item.label || "未标记") + '</div></td>' +
+          '<td>' + escapeHtml(formatTime(item.registeredAt)) + '<div class="sub">' + escapeHtml(item.registeredAtSource || "未知") + '</div></td>' +
+          '<td>' + productStatus + '</td>' +
           '<td>' + linkBadge + '<div class="sub">' + escapeHtml(item.accessUrl ? "可复制专属链接" : "需要补链接") + '</div></td>' +
           '<td>' + code + '</td>' +
           '<td><span class="badge">' + escapeHtml(item.latestCodeSource || "--") + '</span><div class="sub">' + escapeHtml(formatTime(item.latestCodeAt)) + '</div></td>' +
@@ -1931,6 +1944,7 @@ const EMAILS_HTML = `<!doctype html>
             '<button class="small" data-action="copy-link" data-index="' + index + '"' + (item.accessUrl ? "" : " disabled") + '>复制链接</button>' +
             '<button class="small ok" data-action="ensure" data-index="' + index + '">' + (item.hasToken ? "检查链接" : "补链接") + '</button>' +
             '<button class="small warn" data-action="reset" data-index="' + index + '">重置链接</button>' +
+            '<button class="' + statusButtonClass + '" data-action="toggle-status" data-index="' + index + '">' + statusButtonText + '</button>' +
           '</div></td>' +
         '</tr>';
       }).join("");
@@ -1953,6 +1967,14 @@ const EMAILS_HTML = `<!doctype html>
       if (action === "copy-email") return copyText(item.targetEmail, "邮箱已复制");
       if (action === "copy-link") return copyText(item.accessUrl, "专属链接已复制");
       if (action === "ensure") return ensureToken(item);
+      if (action === "toggle-status") {
+        button.disabled = true;
+        const nextStatus = item.productStatus === "out" ? "" : "out";
+        const data = await api("/api/admin/emails/status", { method:"POST", body:JSON.stringify({ targetEmail:item.targetEmail, productStatus:nextStatus }) });
+        showToast(data.ok ? (nextStatus ? "已标记成品/已出" : "已取消成品/已出") : (data.error || "状态更新失败"));
+        await load();
+        return;
+      }
       if (action === "reset") {
         button.disabled = true;
         const data = await api("/api/admin/tokens/reset", { method:"POST", body:JSON.stringify({ targetEmail:item.targetEmail }) });
@@ -1969,7 +1991,13 @@ const EMAILS_HTML = `<!doctype html>
       showToast("缺失链接已补齐");
       await load();
     });
-    $("#copyAll").addEventListener("click", () => copyText(state.items.map((item) => [item.targetEmail, item.accessUrl || "", item.latestCode || ""].join("\\t")).join("\\n"), "列表已复制"));
+    $("#copyAll").addEventListener("click", () => copyText(state.items.map((item) => [
+      item.targetEmail,
+      formatTime(item.registeredAt),
+      item.productStatus === "out" ? "成品/已出" : "未标记",
+      item.accessUrl || "",
+      item.latestCode || ""
+    ].join("\\t")).join("\\n"), "列表已复制"));
     $("#clearSearch").addEventListener("click", () => { searchInput.value = ""; missingOnlyInput.checked = false; load(); });
     $("#refresh").addEventListener("click", load);
     $("#logout").addEventListener("click", async () => { await fetch("/api/logout", { method:"POST" }); location.href = "/"; });
@@ -2060,6 +2088,16 @@ export class MailWorker {
         return json({ ok: true, token });
       } catch {
         return json({ ok: false, error: "Invalid email" }, 400);
+      }
+    }
+
+    if (url.pathname === "/admin/emails/status" && request.method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      try {
+        const item = await this.setEmailStatus(body);
+        return json({ ok: true, item });
+      } catch {
+        return json({ ok: false, error: "Invalid email status" }, 400);
       }
     }
 
@@ -2168,11 +2206,14 @@ export class MailWorker {
     const targetEmail = String(body.targetEmail || "").trim().toLowerCase();
     if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(targetEmail)) throw new Error("Invalid targetEmail");
     const accessToken = normalizeAccessToken(body.accessToken) || randomHex(24);
+    const nowIso = new Date().toISOString();
+    const registeredAt = normalizeIsoDate(body.registeredAt) || nowIso;
     const item = {
       accessToken,
       targetEmail,
       label: String(body.label || ""),
-      createdAt: new Date().toISOString(),
+      registeredAt,
+      createdAt: nowIso,
       resetAt: "",
       revokedAt: "",
     };
@@ -2194,6 +2235,7 @@ export class MailWorker {
     const next = await this.registerAccessToken({
       targetEmail: current.targetEmail,
       label: current.label,
+      registeredAt: current.registeredAt || current.createdAt,
       accessToken: randomHex(24),
     });
     next.resetAt = new Date().toISOString();
@@ -2206,9 +2248,11 @@ export class MailWorker {
     if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(targetEmail)) throw new Error("Invalid targetEmail");
     const current = await this.findActiveTokenByEmail(targetEmail);
     if (current) return current;
+    const meta = await this.getEmailMeta(targetEmail);
     return this.registerAccessToken({
       targetEmail,
       label: String(body.label || "managed"),
+      registeredAt: normalizeIsoDate(body.registeredAt) || meta.registeredAt || "",
       accessToken: randomHex(24),
     });
   }
@@ -2218,6 +2262,31 @@ export class MailWorker {
     return rows
       .filter((item) => item.targetEmail === targetEmail && !item.revokedAt)
       .sort((a, b) => Date.parse(b.createdAt || b.resetAt || 0) - Date.parse(a.createdAt || a.resetAt || 0))[0] || null;
+  }
+
+  async getEmailMeta(targetEmail) {
+    const email = String(targetEmail || "").trim().toLowerCase();
+    if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(email)) return {};
+    return (await this.state.storage.get(`email:${email}`)) || {};
+  }
+
+  async setEmailStatus(body) {
+    const targetEmail = String(body.targetEmail || "").trim().toLowerCase();
+    if (!/^[a-z0-9._%+-]+@icloud\.com$/i.test(targetEmail)) throw new Error("Invalid targetEmail");
+    const productStatus = String(body.productStatus || body.status || "").trim().toLowerCase() === "out" ? "out" : "";
+    const current = await this.getEmailMeta(targetEmail);
+    const nowIso = new Date().toISOString();
+    const item = {
+      ...current,
+      targetEmail,
+      registeredAt: normalizeIsoDate(body.registeredAt) || current.registeredAt || "",
+      productStatus,
+      productStatusLabel: productStatus ? "成品/已出" : "",
+      productStatusAt: productStatus ? nowIso : "",
+      updatedAt: nowIso,
+    };
+    await this.state.storage.put(`email:${targetEmail}`, item);
+    return item;
   }
 
   async scanDue() {
@@ -2400,6 +2469,7 @@ export class MailWorker {
     const tokens = Array.from((await this.state.storage.list({ prefix: "token:" })).values());
     const codes = Array.from((await this.state.storage.list({ prefix: "code:" })).values());
     const sessions = Array.from((await this.state.storage.list({ prefix: "session:" })).values());
+    const metas = Array.from((await this.state.storage.list({ prefix: "email:" })).values());
     const map = new Map();
 
     const ensureRow = (targetEmail) => {
@@ -2409,6 +2479,11 @@ export class MailWorker {
         map.set(email, {
           targetEmail: email,
           label: "",
+          registeredAt: "",
+          registeredAtSource: "",
+          productStatus: "",
+          productStatusLabel: "",
+          productStatusAt: "",
           hasToken: false,
           tokenCount: 0,
           tokenCreatedAt: "",
@@ -2425,10 +2500,30 @@ export class MailWorker {
       return map.get(email);
     };
 
+    for (const meta of metas) {
+      const row = ensureRow(meta.targetEmail);
+      if (!row) continue;
+      if (meta.registeredAt) {
+        row.registeredAt = meta.registeredAt;
+        row.registeredAtSource = "后台标记";
+      }
+      row.productStatus = meta.productStatus || "";
+      row.productStatusLabel = meta.productStatusLabel || "";
+      row.productStatusAt = meta.productStatusAt || "";
+    }
+
     for (const token of tokens) {
-      if (!token || token.revokedAt) continue;
+      if (!token) continue;
       const row = ensureRow(token.targetEmail);
       if (!row) continue;
+      const registeredAt = token.registeredAt || token.createdAt || "";
+      const registeredTime = Date.parse(registeredAt || 0);
+      const currentRegisteredTime = Date.parse(row.registeredAt || 0);
+      if (registeredTime && (!currentRegisteredTime || registeredTime < currentRegisteredTime)) {
+        row.registeredAt = registeredAt;
+        row.registeredAtSource = token.registeredAt ? "邮箱注册时间" : "链接创建时间";
+      }
+      if (token.revokedAt) continue;
       row.hasToken = true;
       row.missingToken = false;
       row.tokenCount += 1;
@@ -2469,6 +2564,8 @@ export class MailWorker {
     const activityTime = (row) => Math.max(
       Date.parse(row.latestCodeAt || 0) || 0,
       Date.parse(row.latestSessionAt || 0) || 0,
+      Date.parse(row.productStatusAt || 0) || 0,
+      Date.parse(row.registeredAt || 0) || 0,
       Date.parse(row.tokenCreatedAt || 0) || 0
     );
     const allRows = Array.from(map.values()).sort((a, b) => {
@@ -2480,6 +2577,7 @@ export class MailWorker {
       withToken: allRows.filter((row) => row.hasToken).length,
       missingToken: allRows.filter((row) => row.missingToken).length,
       withRecentCode: allRows.filter((row) => row.latestCode).length,
+      finishedOrOut: allRows.filter((row) => row.productStatus === "out").length,
     };
     const filtered = allRows
       .filter((row) => !missingOnly || row.missingToken)
@@ -2492,6 +2590,8 @@ export class MailWorker {
           row.latestCodeSubject,
           row.latestCodeSource,
           row.latestSessionStatus,
+          row.productStatusLabel || row.productStatus,
+          row.registeredAtSource,
         ].join(" ").toLowerCase().includes(search);
       });
 
@@ -2581,6 +2681,11 @@ export default {
     if (url.pathname === "/api/admin/emails/ensure-token") {
       if (!(await hasPanelSession(request, env))) return json({ ok: false, error: "Unauthorized" }, 401);
       return mailWorkerFetch(env, "/admin/emails/ensure-token", request);
+    }
+
+    if (url.pathname === "/api/admin/emails/status") {
+      if (!(await hasPanelSession(request, env))) return json({ ok: false, error: "Unauthorized" }, 401);
+      return mailWorkerFetch(env, "/admin/emails/status", request);
     }
 
     if (url.pathname === "/api/admin/codes") {
@@ -2963,6 +3068,14 @@ function isMissingMailboxError(error) {
 function normalizeAccessToken(value) {
   const token = String(value || "").trim().toLowerCase();
   return /^[a-f0-9]{48}$/.test(token) ? token : "";
+}
+
+function normalizeIsoDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const time = Date.parse(text);
+  if (!Number.isFinite(time)) return "";
+  return new Date(time).toISOString();
 }
 
 function resolveAccessToken(value) {
