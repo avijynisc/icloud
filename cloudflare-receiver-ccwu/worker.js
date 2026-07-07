@@ -2519,7 +2519,7 @@ export class MailWorker {
       const registeredAt = token.registeredAt || token.createdAt || "";
       const registeredTime = Date.parse(registeredAt || 0);
       const currentRegisteredTime = Date.parse(row.registeredAt || 0);
-      if (registeredTime && (!currentRegisteredTime || registeredTime < currentRegisteredTime)) {
+      if (registeredTime && (!row.registeredAt || registeredTime < currentRegisteredTime)) {
         row.registeredAt = registeredAt;
         row.registeredAtSource = token.registeredAt ? "邮箱注册时间" : "链接创建时间";
       }
